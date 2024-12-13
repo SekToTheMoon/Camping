@@ -27,11 +27,12 @@ const Hero = ({ landmarks }: { landmarks: LandmarkCardProps[] }) => {
         {landmarks.map((landmark) => {
           return (
             <SwiperSlide key={landmark.image} className="group">
-              <div className="relative rounded-md overflow-hidden">
+              <div className="relative h-[300px]  rounded-md overflow-hidden">
                 <Image
                   sizes="100vw"
+                  fill
                   alt={landmark.description}
-                  className="h-[300px] object-cover
+                  className="object-cover
                   brightness-75 group-hover:brightness-50 
                   transition-all duration-300
                   "
