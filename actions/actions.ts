@@ -8,8 +8,8 @@ import {
 } from "@/utils/schemas";
 import { clerkClient, currentUser } from "@clerk/nextjs/server";
 import db from "@/utils/db";
-import { redirect } from "next/navigation";
-import { uploadFile } from "@/utils/supabase";
+import { redirect, RedirectType } from "next/navigation";
+import { deleteFile, uploadFile } from "@/utils/supabase";
 import { revalidatePath } from "next/cache";
 
 const getAuthUser = async () => {
@@ -94,6 +94,55 @@ export const createLandmarkAction = async (
   redirect("/");
 };
 
+export const editLandmark = async (
+  prevState: any,
+  formData: FormData
+): Promise<{ message: string }> => {
+  const rawData = Object.fromEntries(formData);
+  try {
+    // Step 1 Validate Data
+    // Step 2 Upload Image to Supabase and check exist
+    // Step 3 Insert to DB
+    const user = await getAuthUser();
+    const rawData = Object.fromEntries(formData);
+    const validateField = validateWithZod(landmarkSchema, rawData);
+    const file = formData.get("image") as File;
+    const hasFile = file.size > 0;
+    const fullPath = hasFile
+      ? await uploadFile(validateWithZod(imageSchema, { image: file }).image)
+      : null;
+
+    if (fullPath) {
+      const imageName = await db.landmark.findFirst({
+        where: {
+          id: rawData.id as string,
+        },
+        select: {
+          image: true,
+        },
+      });
+      if (imageName?.image) {
+        await deleteFile(imageName.image);
+      }
+    }
+
+    await db.landmark.update({
+      data: {
+        ...validateField,
+        ...(fullPath && { image: fullPath }),
+        profileId: user.id,
+      },
+      where: {
+        id: rawData.id as string,
+      },
+    });
+  } catch (error) {
+    // console.log(error);
+    return renderError(error);
+  }
+  redirect("/landmark/" + rawData.id);
+};
+
 export const fetchLandmarks = async ({
   search = "",
   category,
@@ -115,6 +164,7 @@ export const fetchLandmarks = async ({
   });
   return landmarks;
 };
+
 export const fetchLandmarksHero = async () => {
   const landmarks = await db.landmark.findMany({
     orderBy: {

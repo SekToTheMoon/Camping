@@ -5,6 +5,9 @@ import Description from "@/components/landmark/Description";
 import ImageContainer from "@/components/landmark/ImageContainer";
 import ShareButton from "@/components/landmark/ShareButton";
 import MapLandmark from "@/components/map/MapLandmark";
+import { Button } from "@/components/ui/button";
+import { auth } from "@clerk/nextjs/server";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 // rafce
@@ -14,15 +17,21 @@ const LandmarkDetail = async ({
   params: Promise<{ id: string }>;
 }) => {
   const id = (await params).id;
+  const { userId } = await auth();
   const landmark = await fetchLandmarkDetail({ id });
   if (!landmark) redirect("/");
-  // console.log(landmark);
+  // console.log(landmark, userId);
   return (
     <section>
       <Breadcrums name={landmark.name} />
       <header className="flex justify-between mt-4 items-center">
         <h1 className="text-4xl font-bold"> {landmark.name}</h1>
         <div className="flex items-center gap-x-4">
+          {userId === landmark["profile"].clerkId && (
+            <Button asChild>
+              <Link href={`/camp/create?edit=${id}`}>แก้ไข</Link>
+            </Button>
+          )}
           <ShareButton landmarkId={landmark.id} name={landmark.name} />
           <FavoriteToggleButton landmarkId={landmark.id} />
         </div>
