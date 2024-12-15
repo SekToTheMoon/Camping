@@ -1,5 +1,9 @@
 // rafce
 const ProfilePage = () => {
-  return <section>Can't use this page</section>;
+  return (
+    <section>
+      <p>Can't use this page</p>
+    </section>
+  );
 };
 export default ProfilePage;
