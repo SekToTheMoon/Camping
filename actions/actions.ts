@@ -6,9 +6,9 @@ import {
   profileSchema,
   validateWithZod,
 } from "@/utils/schemas";
-import { clerkClient, currentUser } from "@clerk/nextjs/server";
+import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 import db from "@/utils/db";
-import { redirect, RedirectType } from "next/navigation";
+import { redirect } from "next/navigation";
 import { deleteFile, uploadFile } from "@/utils/supabase";
 import { revalidatePath } from "next/cache";
 
@@ -28,6 +28,15 @@ const renderError = (error: unknown): { message: string } => {
     message: error instanceof Error ? error.message : "An Error!!!",
   };
 };
+
+export const fetchHasProfile = async (userId: string) => {
+  const user = db.profile.findFirst({
+    where: { clerkId: userId },
+  });
+
+  return user;
+};
+
 export const createProfileAction = async (
   prevState: any,
   formData: FormData
@@ -55,6 +64,27 @@ export const createProfileAction = async (
       },
     });
     // return { message: "Create Profile Success!!!" };
+  } catch (error) {
+    // console.log(error);
+    return renderError(error);
+  }
+  redirect("/");
+};
+
+export const editProfileAction = async (prevState: any, formData: FormData) => {
+  try {
+    const rawData = Object.fromEntries(formData);
+    const validateField = validateWithZod(profileSchema, rawData);
+
+    await db.profile.update({
+      data: {
+        ...validateField,
+      },
+      where: {
+        id: rawData.id as string,
+      },
+    });
+    // return { message: "Update Profile Success!!!" };
   } catch (error) {
     // console.log(error);
     return renderError(error);
@@ -146,13 +176,16 @@ export const editLandmark = async (
 export const fetchLandmarks = async ({
   search = "",
   category,
+  profileId,
 }: {
   search?: string;
   category?: string;
+  profileId?: string;
 }) => {
   const landmarks = await db.landmark.findMany({
     where: {
       category,
+      profileId,
       OR: [
         { name: { contains: search, mode: "insensitive" } },
         { description: { contains: search, mode: "insensitive" } },
